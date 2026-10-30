@@ -1,0 +1,32 @@
+name: publish preview
+on:
+  workflow_dispatch:
+    inputs:
+      path:
+        description: file name on the site
+        required: true
+      html_b64:
+        description: the page, base64
+        required: true
+permissions:
+  pages: write
+  id-token: write
+concurrency: pages
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: github-pages
+    steps:
+      - name: write the page
+        env:
+          P: ${{ inputs.path }}
+          B: ${{ inputs.html_b64 }}
+        run: |
+          mkdir site
+          case "$P" in *[!A-Za-z0-9._-]*|"") echo "bad path"; exit 1;; esac
+          printf '%s' "$B" | base64 -d > "site/$P"
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+          retention-days: 1
+      - uses: actions/deploy-pages@v4
